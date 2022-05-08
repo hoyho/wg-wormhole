@@ -34,8 +34,8 @@ func NewCommand(name string) *cobra.Command {
 	}
 
 	c.AddCommand(
-		NewRegistryCommand(),
-		NewNodeCommand(),
+		RegistryCommand,
+		NodeCommand,
 	)
 
 	return c

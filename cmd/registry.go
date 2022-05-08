@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -10,24 +11,63 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl"
 )
 
-//NewRegistryCommand return a registry cmd definition
-func NewRegistryCommand() *cobra.Command {
-	var subCmdName = "registry"
-	c := &cobra.Command{
-		Use:   subCmdName,
-		Short: "start a registry service",
-		Long:  fmt.Sprintf("The `%s` command starts a %s service.", subCmdName, subCmdName),
-		PreRun: func(cmd *cobra.Command, args []string) {
-			//fmt.Println("cmdList PreRun")
-		},
-		Hidden:            false,
-		DisableAutoGenTag: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runRegistry()
-		},
+var subCmdNameReg = "registry"
+
+var RegistryCommand = &cobra.Command{
+	Use:   subCmdNameReg,
+	Short: "start a registry service",
+	Long:  fmt.Sprintf("The `%s` command starts a %s service.", subCmdNameReg, subCmdNameReg),
+	// PreRun: func(cmd *cobra.Command, args []string) {
+	// 	if err := validate(regOpt); err != nil {
+	// 		fmt.Println("use -h for help")
+	// 	}
+	// },
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		err := regOpt.validate()
+		if err != nil {
+			fmt.Println("invalid parameter. you may need add -h for help")
+			fmt.Println()
+		}
+		return err
+	},
+	Hidden:            false,
+	DisableAutoGenTag: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runRegistry()
+	},
+}
+
+var (
+	regOpt registryOption
+)
+
+func init() {
+	RegistryCommand.PersistentFlags().StringVarP(&regOpt.iface, "ifcae", "i", "", "the wireguard interface used for registry")
+	RegistryCommand.PersistentFlags().StringVarP(&regOpt.token, "token", "t", "", "token for a simple verification")
+	RegistryCommand.PersistentFlags().StringVarP(&regOpt.rpcAddress, "address", "a", ":1638", "rpc service listening address")
+}
+
+func (o registryOption) validate() error {
+	if o.iface == "" {
+		return errors.New("`iface` is required")
 	}
 
-	return c
+	if o.rpcAddress == "" {
+		return errors.New("`address` is required")
+	}
+
+	if o.token == "" {
+		return errors.New("`token`is required")
+	}
+
+	return nil
+}
+
+//registryOption defines the option for registry
+type registryOption struct {
+	iface      string
+	rpcAddress string
+	token      string
 }
 
 func runRegistry() error {
