@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package wgSvc.proto;
+
+option go_package = "wg-wormhole/proto";
+
+
+service Registry {
+
+    rpc GetEndpoint (GetEndpointRequest) returns (GetEndpointReply) {}
+    rpc RegisterEndpoint (RegRequest) returns ( RegReply) {}
+}
+
+  // The request message
+message GetEndpointRequest {
+}
+
+message GetEndpointReply {
+}
+  
+  
+  
+  message RegRequest {
+  }
+  
+  message RegReply {
+  }
