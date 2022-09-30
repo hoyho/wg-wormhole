@@ -64,7 +64,7 @@ func (si serverImpl) GetEndpoint(ctx context.Context, req *pb.GetEndpointRequest
 			ReceiveBytes:  p.ReceiveBytes,
 		}
 		if p.Endpoint != nil {
-			peer.EndpointIP = string(p.Endpoint.IP)
+			peer.EndpointIP = p.Endpoint.IP.String()
 			peer.EndpointPort = int32(p.Endpoint.Port)
 		}
 		if !p.LastHandshakeTime.IsZero() {

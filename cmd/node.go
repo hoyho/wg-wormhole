@@ -140,6 +140,7 @@ func syncDevice(dev *wgtypes.Device, regClient pb.RegistryClient) error {
 	regInfo, callErr := regClient.GetEndpoint(context.Background(), &pb.GetEndpointRequest{})
 	if callErr != nil {
 		log.Println("fetch devices error", callErr)
+		return callErr
 	}
 
 	log.Println("Device name:", dev.Name)
@@ -155,10 +156,7 @@ func syncDevice(dev *wgtypes.Device, regClient pb.RegistryClient) error {
 }
 
 func syncPeer(dev *wgtypes.Device, localPeer wgtypes.Peer, registryInfo *pb.GetEndpointReply) error {
-	wgClient, err := wgctrl.New()
-	if err != nil {
-		log.Fatalf("error constructing Wireguard control client: %v", err)
-	}
+
 	if registryInfo == nil || len(registryInfo.Peers) == 0 {
 		return errRegUndefine
 	}
@@ -180,8 +178,8 @@ func syncPeer(dev *wgtypes.Device, localPeer wgtypes.Peer, registryInfo *pb.GetE
 			continue
 		}
 		//found a match peer from local to registry
-		rPeerEndpoint := fmt.Sprintf("%s:%d", rPeer.EndpointIP, rPeer.EndpointPort)
-		if localPeer.Endpoint.String() != rPeerEndpoint {
+		if isNewEndpoint(localPeer.Endpoint, rPeer.EndpointIP, int(rPeer.EndpointPort)) {
+			rPeerEndpoint := fmt.Sprintf("%s:%d", rPeer.EndpointIP, rPeer.EndpointPort)
 			log.Printf("!!! peer's endpoint updated. from:%v ----> to: %v \n", localPeer.Endpoint.String(), rPeerEndpoint)
 			updated = updated || true
 
@@ -202,6 +200,11 @@ func syncPeer(dev *wgtypes.Device, localPeer wgtypes.Peer, registryInfo *pb.GetE
 	}
 
 	if updated {
+		log.Println("updating device:", dev.Name)
+		wgClient, err := wgctrl.New()
+		if err != nil {
+			log.Fatalf("error constructing Wireguard control client: %v", err)
+		}
 		err = wgClient.ConfigureDevice(dev.Name, newConfig)
 		if err != nil {
 			log.Fatalf("error ConfigureDevice Wireguard control client: %v", err)
@@ -209,4 +212,15 @@ func syncPeer(dev *wgtypes.Device, localPeer wgtypes.Peer, registryInfo *pb.GetE
 	}
 
 	return nil
+}
+
+func isNewEndpoint(localEndpoint *net.UDPAddr, remoteEndpointIP string, remoteEndpointPort int) bool {
+	if localEndpoint != nil {
+		return localEndpoint.IP.String() != remoteEndpointIP ||
+			localEndpoint.Port != remoteEndpointPort
+	} else {
+		//local endpoint is nil, but remote is valid, then it is updated event
+		return len(remoteEndpointIP) > 0 && remoteEndpointPort > 0
+	}
+
 }
