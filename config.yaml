@@ -1,0 +1,5 @@
+local:
+  interface: tun0
+registry:
+  interface: wg0
+simpleToken: 1qaz@WSX3edc$RFV

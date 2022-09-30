@@ -23,22 +23,25 @@ message GetEndpointReply {
 }
   
 message Peer {
-  string endpoint =1;
-  string pubKey =2;
-  int64 lastHandshakeUnixTimestamp =3;
 
-  	// TransmitBytes indicates the number of bytes transmitted to this peer.
-	int64 TransmitBytes=4;
+  string endpointIP =1;
+  int32 endpointPort =2;
 
-  	// ReceiveBytes indicates the number of bytes received from this peer.
-    int64 ReceiveBytes =5;
+  string pubKey =3;
+  int64 lastHandshakeUnixTimestamp =4;
+
+  // TransmitBytes indicates the number of bytes transmitted to this peer.
+	int64 TransmitBytes=5;
+
+  // ReceiveBytes indicates the number of bytes received from this peer.
+  int64 ReceiveBytes =6;
 
 	// AllowedIPs specifies which IPv4 and IPv6 addresses this peer is allowed
 	// to communicate on.
 	//
 	// 0.0.0.0/0 indicates that all IPv4 addresses are allowed, and ::/0
 	// indicates that all IPv6 addresses are allowed.
-	repeated string AllowedIPs =6;
+	repeated string AllowedIPs =7;
 }
   
 message RegRequest {}
