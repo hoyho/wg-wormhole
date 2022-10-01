@@ -16,9 +16,8 @@ import (
 )
 
 var (
-	subCmdNameNode  = "node"
-	nodeOpt         nodeOption
-	refreshInterval = 15 * time.Second
+	subCmdNameNode = "node"
+	nodeOpt        nodeOption
 )
 
 var NodeCommand = &cobra.Command{
@@ -41,16 +40,13 @@ var NodeCommand = &cobra.Command{
 }
 
 func init() {
-	NodeCommand.PersistentFlags().StringVarP(&nodeOpt.iface, "iface", "i", "", "the wireguard interface used for this node")
+	NodeCommand.PersistentFlags().StringVarP(&nodeOpt.iface, "iface", "i", "", "the wireguard interface used for this node [optional] ")
 	NodeCommand.PersistentFlags().StringVarP(&nodeOpt.token, "token", "t", "", "token for a simple verification")
 	NodeCommand.PersistentFlags().StringVarP(&nodeOpt.regAddr, "address", "a", "", "remote rpc address of registry")
+	NodeCommand.PersistentFlags().DurationVarP(&nodeOpt.refreshInterval, "refresh", "r", 15*time.Second, "refresh interval for the peers")
 }
 
 func (o nodeOption) validate() error {
-	if o.iface == "" {
-		return errors.New("`iface` is required")
-	}
-
 	if o.regAddr == "" {
 		return errors.New("`address` is required")
 	}
@@ -64,16 +60,16 @@ func (o nodeOption) validate() error {
 
 //nodeOption defines the option for node
 type nodeOption struct {
-	iface   string
-	regAddr string
-	token   string
+	iface           string
+	regAddr         string
+	token           string
+	refreshInterval time.Duration
 }
 
 func runNode() error {
 	wgClient, err := wgctrl.New()
 	if err != nil {
-		log.Fatalf("error constructing Wireguard control client: %v",
-			err)
+		log.Fatalf("error constructing Wireguard control client: %v", err)
 	}
 
 	var opts []grpc.DialOption
@@ -94,7 +90,8 @@ func runNode() error {
 		}
 
 		for _, dev := range devs {
-			if dev.Name != nodeOpt.iface {
+			//if specific any filter for dev. todo(Hoyho): use regex
+			if len(nodeOpt.iface) > 0 && dev.Name != nodeOpt.iface {
 				continue
 			}
 			if err := syncDevice(dev, client); err != nil {
@@ -102,13 +99,11 @@ func runNode() error {
 			}
 		}
 
-		time.Sleep(refreshInterval)
+		time.Sleep(nodeOpt.refreshInterval)
 		fmt.Println("   ")
 		fmt.Println("   ")
 
 	}
-
-	return nil
 }
 
 var errDevUndefine = errors.New("device is nil")
