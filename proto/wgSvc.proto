@@ -13,6 +13,7 @@ service Registry {
 
   // The request message
 message GetEndpointRequest {
+  string token =1;
 }
 
 message GetEndpointReply {

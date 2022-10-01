@@ -46,6 +46,10 @@ func (si serverImpl) preflight() error {
 
 //GetEndpoint implement fetching endpoint
 func (si serverImpl) GetEndpoint(ctx context.Context, req *pb.GetEndpointRequest) (reply *pb.GetEndpointReply, err error) {
+	if req.Token != verifyCode {
+		return nil, status.Errorf(codes.PermissionDenied, "invalid token")
+	}
+
 	dev, err := si.wgClient.Device(registryInterface)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

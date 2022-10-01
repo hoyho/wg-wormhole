@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	subCmdNameNode = "node"
-	nodeOpt        nodeOption
+	subCmdNameNode  = "node"
+	nodeOpt         nodeOption
+	refreshInterval = 15 * time.Second
 )
 
 var NodeCommand = &cobra.Command{
@@ -68,24 +69,6 @@ type nodeOption struct {
 	token   string
 }
 
-// type Node interface {
-// 	Run() error
-// }
-
-// func NewNode() Node {
-// 	var opts []grpc.DialOption
-// 	opts = append(opts, grpc.WithInsecure())
-// 	opts = append(opts, grpc.WithBlock())
-
-// 	conn, err := grpc.Dial("127.0.0.1:1638", opts...)
-// 	if err != nil {
-// 		log.Fatalf("fail to dial: %v", err)
-// 	}
-// 	defer conn.Close()
-// 	// client := pb.NewRegistryClient(conn)
-// 	// client.GetEndpoint()
-// }
-
 func runNode() error {
 	wgClient, err := wgctrl.New()
 	if err != nil {
@@ -119,7 +102,7 @@ func runNode() error {
 			}
 		}
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(refreshInterval)
 		fmt.Println("   ")
 		fmt.Println("   ")
 
@@ -137,7 +120,7 @@ func syncDevice(dev *wgtypes.Device, regClient pb.RegistryClient) error {
 		return errDevUndefine
 	}
 
-	regInfo, callErr := regClient.GetEndpoint(context.Background(), &pb.GetEndpointRequest{})
+	regInfo, callErr := regClient.GetEndpoint(context.Background(), &pb.GetEndpointRequest{Token: nodeOpt.token})
 	if callErr != nil {
 		log.Println("fetch devices error", callErr)
 		return callErr
@@ -174,7 +157,8 @@ func syncPeer(dev *wgtypes.Device, localPeer wgtypes.Peer, registryInfo *pb.GetE
 	updated := false
 
 	for _, rPeer := range registryInfo.Peers {
-		if rPeer.PubKey != localPeer.PublicKey.String() {
+		lPubKey := localPeer.PublicKey.String()
+		if rPeer.PubKey != lPubKey {
 			continue
 		}
 		//found a match peer from local to registry
