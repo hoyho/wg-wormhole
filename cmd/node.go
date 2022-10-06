@@ -73,7 +73,7 @@ func runNode() error {
 	}
 
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithInsecure(), grpc.WithBlock())
+	opts = append(opts, grpc.WithInsecure(), grpc.WithTimeout(30*time.Second))
 
 	conn, err := grpc.Dial(nodeOpt.regAddr, opts...)
 	if err != nil {
