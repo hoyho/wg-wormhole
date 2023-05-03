@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	rpcServer "github.com/hoyho/wg-wormhole/pkg/rpc"
+	"github.com/hoyho/wg-wormhole/pkg/webserver"
 	"github.com/spf13/cobra"
 )
 
@@ -42,6 +43,8 @@ func init() {
 	RegistryCommand.PersistentFlags().StringVarP(&regOpt.iface, "ifcae", "i", "", "the wireguard interface used for registry")
 	RegistryCommand.PersistentFlags().StringVarP(&regOpt.token, "token", "t", "", "token for a simple verification")
 	RegistryCommand.PersistentFlags().StringVarP(&regOpt.rpcAddress, "address", "a", ":1638", "rpc service listening address")
+	RegistryCommand.PersistentFlags().StringVarP(&regOpt.webAddress, "address-http", "A", ":1639", "http server listening address")
+	RegistryCommand.PersistentFlags().StringVarP(&regOpt.watchPubKey, "watch-peer-key", "w", "nFz1T36SEfpGrQKUYAZoPTL4soGCesObVS+Groooooo=", "watch a peer endpoint in http server")
 }
 
 func (o registryOption) validate() error {
@@ -60,14 +63,25 @@ func (o registryOption) validate() error {
 	return nil
 }
 
-//registryOption defines the option for registry
+// registryOption defines the option for registry
 type registryOption struct {
 	iface      string
 	rpcAddress string
 	token      string
+
+	webAddress  string
+	watchPubKey string
 }
 
 func runRegistry(o registryOption) error {
+
+	go func() {
+		if r := recover(); r != nil {
+			fmt.Println("http server panic:", r)
+		}
+		webserver.Serve(o.webAddress, o.token, o.iface, o.watchPubKey)
+	}()
+
 	rpcServer.ServeRpcForever(o.rpcAddress, o.token, o.iface)
 	return nil
 }
